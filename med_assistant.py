@@ -4,12 +4,7 @@ import requests
 import pandas as pd
 from io import BytesIO
 
-# Define the API key
-# This line attempts to fetch the API_KEY from Streamlit's secrets management.
-# For deployed apps (e.g., Streamlit Cloud), this means the key must be set in the app's secrets dashboard.
-# For local development, it looks for a .streamlit/secrets.toml file.
-# If the key is not found in either place, it defaults to an empty string.
-API_KEY = st.secrets.get("API_KEY", "")
+API_KEY = st.secrets.get("OPENAO_API_KEY", "")
 
 # --- Streamlit UI Setup ---
 st.set_page_config(page_title="AI Medical Assistant", layout="centered")
