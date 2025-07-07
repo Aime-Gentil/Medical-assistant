@@ -5,8 +5,10 @@ import pandas as pd
 from io import BytesIO
 
 # Define the API key
-# For Streamlit Cloud/local deployment, this will fetch from .streamlit/secrets.toml
-# For Canvas environment, it will default to an empty string and Canvas will inject the key at runtime.
+# This line attempts to fetch the API_KEY from Streamlit's secrets management.
+# For deployed apps (e.g., Streamlit Cloud), this means the key must be set in the app's secrets dashboard.
+# For local development, it looks for a .streamlit/secrets.toml file.
+# If the key is not found in either place, it defaults to an empty string.
 API_KEY = st.secrets.get("API_KEY", "")
 
 # --- Streamlit UI Setup ---
@@ -158,9 +160,11 @@ if st.button("Generate Recommendation"):
 
         # Call the Gemini API
         try:
-            # Check if API_KEY is available
+            # This check ensures the API_KEY is available before making the API call.
+            # If you see "API Key not found" in your deployed app, it means the 'API_KEY'
+            # secret needs to be configured in your Streamlit Cloud dashboard.
             if not API_KEY:
-                st.error("API Key not found. Please set it in Streamlit secrets as 'API_KEY' or ensure it's provided by the Canvas environment.")
+                st.error("API Key not found. Please set it in Streamlit secrets as 'API_KEY' in your deployment environment (e.g., Streamlit Cloud dashboard).")
             else:
                 st.info("Generating recommendations... Please wait. This may take a moment.")
                 chat_history = []
