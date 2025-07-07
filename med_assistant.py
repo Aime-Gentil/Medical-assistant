@@ -4,7 +4,7 @@ import requests
 import pandas as pd
 from io import BytesIO
 
-API_KEY = st.secrets.get("OPENAO_API_KEY", "")
+API_KEY = st.secrets.get("OPENAI_API_KEY", "")
 
 # --- Streamlit UI Setup ---
 st.set_page_config(page_title="AI Medical Assistant", layout="centered")
