@@ -3,3 +3,7 @@ requests
 pandas
 numpy
 scikit-learn
+openpyxl
+google-generativeai
+# Uncomment the line below if you decide to implement direct DOCX parsing
+# python-docx
