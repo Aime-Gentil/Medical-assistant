@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 from io import BytesIO
 import google.generativeai as genai
+import os # Import os for file path operations
 
 # --- Gemini API Configuration ---
 # Configure the genai library with the API key from Streamlit secrets
@@ -23,11 +24,6 @@ def format_recommendation_text(text):
     text = text.replace("Dosage Guidelines", '<h4 class="sub-section-header"><i class="fas fa-syringe section-icon"></i> Dosage Guidelines</h4>')
     text = text.replace("Practical Activities", '<h4 class="sub-section-header"><i class="fas fa-walking section-icon"></i> Practical Activities</h4>')
 
-    # Apply emphasis colors to specific sections (assuming these phrases appear in the AI output)
-    # This is a simple approach; for more complex parsing, regex might be needed.
-    # We'll wrap the entire section content in a styled div/span if possible, or just the headers.
-    # For now, let's just make the headers stand out more.
-
     # If you want to color the *content* of each section, you'd need more advanced parsing
     # of the AI's output structure (e.g., splitting by "Medication Recommendations:", etc.)
     # For this example, we'll focus on styling the headers and the overall box.
@@ -37,101 +33,23 @@ def format_recommendation_text(text):
 # --- Streamlit UI Setup ---
 st.set_page_config(page_title="AI Medical Assistant", layout="centered")
 
+# Inject Font Awesome and custom CSS from style.css
 st.markdown(
     """
     <!-- Font Awesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
-
-    html, body, [class*="st-"] {
-        font-family: 'Inter', sans-serif;
-    }
-
-    body {
-        background: linear-gradient(to right, #e0ffe0, #f0fff0); /* Light green gradient */
-    }
-
-    .main-header {
-        font-size: 2.5em;
-        color: #2e8b57; /* SeaGreen */
-        text-align: center;
-        margin-bottom: 20px;
-        font-weight: bold;
-        padding-top: 10px;
-    }
-    .sub-header {
-        font-size: 1.6em;
-        color: #3cb371; /* MediumSeaGreen */
-        margin-top: 25px;
-        margin-bottom: 15px;
-        border-bottom: 2px solid #e0e0e0;
-        padding-bottom: 5px;
-    }
-    .stButton>button {
-        background-color: #4CAF50; /* Green */
-        color: white;
-        padding: 12px 25px;
-        border-radius: 10px;
-        border: none;
-        font-size: 1.1em;
-        font-weight: 600;
-        cursor: pointer;
-        transition: background-color 0.3s ease, transform 0.2s ease;
-        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-        margin-top: 20px;
-    }
-    .stButton>button:hover {
-        background-color: #45a049; /* Darker Green */
-        transform: translateY(-2px);
-    }
-    .stTextInput>div>div>input, .stTextArea>div>div>textarea, .stFileUploader>div>div>button {
-        border-radius: 8px;
-        border: 1px solid #dcdcdc;
-        padding: 10px;
-        box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
-    }
-    .stSelectbox>div>div>div {
-        border-radius: 8px;
-        border: 1px solid #dcdcdc;
-        padding: 5px;
-    }
-    .recommendation-box {
-        background-color: #ffffff; /* White background for clarity */
-        border-left: 8px solid #2e8b57; /* Darker SeaGreen border */
-        padding: 25px;
-        border-radius: 15px;
-        margin-top: 35px;
-        box-shadow: 0 8px 20px rgba(0,0,0,0.1); /* More pronounced shadow */
-    }
-    .stAlert {
-        border-radius: 8px;
-    }
-
-    /* Custom styles for emphasis and icons */
-    .sub-section-header {
-        font-size: 1.3em;
-        color: #2e8b57; /* SeaGreen for sub-headers */
-        margin-top: 20px;
-        margin-bottom: 10px;
-        font-weight: 600;
-        display: flex;
-        align-items: center;
-    }
-    .section-icon {
-        margin-right: 10px;
-        color: #3cb371; /* MediumSeaGreen for icons */
-    }
-    /* You can define more specific classes if you want to color blocks of text */
-    /*
-    .med-highlight { color: #007bff; font-weight: bold; }
-    .dosage-highlight { color: #dc3545; font-weight: bold; }
-    .activity-highlight { color: #28a745; font-weight: bold; }
-    */
-    </style>
     """,
     unsafe_allow_html=True
 )
+
+# Read the custom CSS file content and inject it
+css_file_path = os.path.join(os.path.dirname(__file__), "style.css")
+try:
+    with open(css_file_path) as f:
+        st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
+except FileNotFoundError:
+    st.error("`style.css` not found. Please ensure it's in the same directory as `med_assistant.py` in your repository.")
+
 
 st.markdown('<h1 class="main-header">🩺 AI Medical Assistant for Doctors 💊</h1>', unsafe_allow_html=True)
 st.write("This agent assists in recommending medicines, dosages, and practical activities for patient healing, now with support for exam result uploads.")
