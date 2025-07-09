@@ -1,11 +1,19 @@
 import streamlit as st
-import json
-import requests
 import pandas as pd
 from io import BytesIO
+import google.generativeai as genai # Ensure this is imported for genai.configure and model usage
+# from docx import Document # Uncomment and install python-docx if you want to enable DOCX parsing
 
-genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
+# --- Gemini API Configuration ---
+# Configure the genai library with the API key from Streamlit secrets
+try:
+    genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
+except Exception as e:
+    st.error(f"Failed to configure Gemini API. Please ensure 'GEMINI_API_KEY' is set in Streamlit secrets. Error: {e}")
+    st.stop() # Stop the app if API key is not configured
+
 model = genai.GenerativeModel("models/gemini-1.5-flash-latest")
+
 # --- Streamlit UI Setup ---
 st.set_page_config(page_title="AI Medical Assistant", layout="centered")
 
@@ -110,16 +118,13 @@ if uploaded_file is not None:
             file_content = df.to_string()
             st.success("XLSX file uploaded and processed successfully!")
         elif file_extension == "docx":
-            # For DOCX, we need a library like python-docx.
-            # For simplicity in this example, we'll advise the user.
-            # In a real application, you'd parse the docx content here.
-            # Example:
-            # from docx import Document
+            # To parse DOCX, you would need to install 'python-docx' (pip install python-docx)
+            # and uncomment the relevant code. For this example, we provide a warning.
             # doc = Document(uploaded_file)
             # file_content = "\n".join([para.text for para in doc.paragraphs])
-            st.warning("DOCX file detected. Direct parsing of DOCX content is complex and requires specific libraries (e.g., 'python-docx'). "
-                       "For this demo, please manually copy relevant text into the 'Symptoms / Condition' box for best results, or consider converting DOCX to TXT/PDF.")
-            file_content = f"Uploaded DOCX file: {uploaded_file.name}. Please refer to its content manually if needed."
+            st.warning("DOCX file detected. Direct parsing of DOCX content requires the 'python-docx' library. "
+                       "For this demo, please manually copy relevant text from the DOCX file into the 'Symptoms / Condition' box for best results, or consider converting DOCX to TXT/PDF.")
+            file_content = f"Uploaded DOCX file: {uploaded_file.name}. Content not parsed automatically in this demo."
         else:
             st.error("Unsupported file type. Please upload CSV, XLSX, or DOCX.")
             file_content = ""
@@ -153,40 +158,23 @@ if st.button("Generate Recommendation"):
 
         prompt_parts.append(f"Symptoms/Condition: {symptoms}\n\nRecommendations:")
 
-        # Call the Gemini API
+        # Call the Gemini API using the genai model
         try:
-            # This check ensures the API_KEY is available before making the API call.
-            # If you see "API Key not found" in your deployed app, it means the 'API_KEY'
-            # secret needs to be configured in your Streamlit Cloud dashboard.
-            if not API_KEY:
-                st.error("API Key not found. Please set it in Streamlit secrets as 'API_KEY' in your deployment environment (e.g., Streamlit Cloud dashboard).")
-            else:
-                st.info("Generating recommendations... Please wait. This may take a moment.")
-                chat_history = []
-                chat_history.append({"role": "user", "parts": [{"text": "".join(prompt_parts)}]})
+            with st.spinner("Generating recommendations... Please wait. This may take a moment."):
+                # The model.generate_content method handles the API call directly
+                response = model.generate_content("".join(prompt_parts))
 
-                payload = {"contents": chat_history}
-                api_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={API_KEY}"
+                # Access the text from the response
+                recommendation_text = response.text
 
-                response = requests.post(api_url, headers={'Content-Type': 'application/json'}, json=payload)
-                response.raise_for_status() # Raise an HTTPError for bad responses (4xx or 5xx)
-                result = response.json()
+                st.markdown('<div class="recommendation-box">', unsafe_allow_html=True)
+                st.markdown('<h3 class="sub-header">Generated Recommendation:</h3>', unsafe_allow_html=True)
+                st.write(recommendation_text)
+                st.markdown('</div>', unsafe_allow_html=True)
 
-                if result.get("candidates") and result["candidates"][0].get("content") and result["candidates"][0]["content"].get("parts"):
-                    recommendation_text = result["candidates"][0]["content"]["parts"][0]["text"]
-                    st.markdown('<div class="recommendation-box">', unsafe_allow_html=True)
-                    st.markdown('<h3 class="sub-header">Generated Recommendation:</h3>', unsafe_allow_html=True)
-                    st.write(recommendation_text)
-                    st.markdown('</div>', unsafe_allow_html=True)
-                else:
-                    st.error("Could not retrieve a valid recommendation from the AI. Please try again or refine your input.")
-                    st.json(result) # Display the full response for debugging
-        except requests.exceptions.RequestException as e:
-            st.error(f"An error occurred while connecting to the AI service: {e}")
-            st.write("Please check your internet connection or try again later.")
         except Exception as e:
-            st.error(f"An unexpected error occurred: {e}")
+            st.error(f"An error occurred while generating recommendations: {e}")
+            st.write("Please check your input or try again later.")
 
 st.markdown("---")
 st.write("Disclaimer: This AI agent provides suggestions for informational purposes only and should not replace professional medical advice. Always consult with a qualified healthcare professional for diagnosis and treatment.")
-
