@@ -4,8 +4,8 @@ import requests
 import pandas as pd
 from io import BytesIO
 
-API_KEY = st.secrets.get("OPENAI_API_KEY")
-
+genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
+model = genai.GenerativeModel("models/gemini-1.5-flash-latest")
 # --- Streamlit UI Setup ---
 st.set_page_config(page_title="AI Medical Assistant", layout="centered")
 
