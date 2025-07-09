@@ -1,8 +1,7 @@
 import streamlit as st
 import pandas as pd
 from io import BytesIO
-import google.generativeai as genai # Ensure this is imported for genai.configure and model usage
-# from docx import Document # Uncomment and install python-docx if you want to enable DOCX parsing
+import google.generativeai as genai
 
 # --- Gemini API Configuration ---
 # Configure the genai library with the API key from Streamlit secrets
@@ -14,16 +13,45 @@ except Exception as e:
 
 model = genai.GenerativeModel("models/gemini-1.5-flash-latest")
 
+# --- Function to format the AI generated recommendation text ---
+def format_recommendation_text(text):
+    """
+    Formats the AI-generated text with colors, icons, and improved readability.
+    """
+    # Add Font Awesome icons and apply custom styling to sections
+    text = text.replace("Medication Recommendations", '<h4 class="sub-section-header"><i class="fas fa-pills section-icon"></i> Medication Recommendations</h4>')
+    text = text.replace("Dosage Guidelines", '<h4 class="sub-section-header"><i class="fas fa-syringe section-icon"></i> Dosage Guidelines</h4>')
+    text = text.replace("Practical Activities", '<h4 class="sub-section-header"><i class="fas fa-walking section-icon"></i> Practical Activities</h4>')
+
+    # Apply emphasis colors to specific sections (assuming these phrases appear in the AI output)
+    # This is a simple approach; for more complex parsing, regex might be needed.
+    # We'll wrap the entire section content in a styled div/span if possible, or just the headers.
+    # For now, let's just make the headers stand out more.
+
+    # If you want to color the *content* of each section, you'd need more advanced parsing
+    # of the AI's output structure (e.g., splitting by "Medication Recommendations:", etc.)
+    # For this example, we'll focus on styling the headers and the overall box.
+
+    return text
+
 # --- Streamlit UI Setup ---
 st.set_page_config(page_title="AI Medical Assistant", layout="centered")
 
 st.markdown(
     """
+    <head>
+        <!-- Font Awesome for icons -->
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    </head>
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
 
     html, body, [class*="st-"] {
         font-family: 'Inter', sans-serif;
+    }
+
+    body {
+        background: linear-gradient(to right, #e0ffe0, #f0fff0); /* Light green gradient */
     }
 
     .main-header {
@@ -71,16 +99,37 @@ st.markdown(
         padding: 5px;
     }
     .recommendation-box {
-        background-color: #f0fff0; /* Honeydew */
-        border-left: 6px solid #3cb371; /* MediumSeaGreen */
+        background-color: #ffffff; /* White background for clarity */
+        border-left: 8px solid #2e8b57; /* Darker SeaGreen border */
         padding: 25px;
-        border-radius: 12px;
+        border-radius: 15px;
         margin-top: 35px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+        box-shadow: 0 8px 20px rgba(0,0,0,0.1); /* More pronounced shadow */
     }
     .stAlert {
         border-radius: 8px;
     }
+
+    /* Custom styles for emphasis and icons */
+    .sub-section-header {
+        font-size: 1.3em;
+        color: #2e8b57; /* SeaGreen for sub-headers */
+        margin-top: 20px;
+        margin-bottom: 10px;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+    }
+    .section-icon {
+        margin-right: 10px;
+        color: #3cb371; /* MediumSeaGreen for icons */
+    }
+    /* You can define more specific classes if you want to color blocks of text */
+    /*
+    .med-highlight { color: #007bff; font-weight: bold; }
+    .dosage-highlight { color: #dc3545; font-weight: bold; }
+    .activity-highlight { color: #28a745; font-weight: bold; }
+    */
     </style>
     """,
     unsafe_allow_html=True
@@ -118,10 +167,6 @@ if uploaded_file is not None:
             file_content = df.to_string()
             st.success("XLSX file uploaded and processed successfully!")
         elif file_extension == "docx":
-            # To parse DOCX, you would need to install 'python-docx' (pip install python-docx)
-            # and uncomment the relevant code. For this example, we provide a warning.
-            # doc = Document(uploaded_file)
-            # file_content = "\n".join([para.text for para in doc.paragraphs])
             st.warning("DOCX file detected. Direct parsing of DOCX content requires the 'python-docx' library. "
                        "For this demo, please manually copy relevant text from the DOCX file into the 'Symptoms / Condition' box for best results, or consider converting DOCX to TXT/PDF.")
             file_content = f"Uploaded DOCX file: {uploaded_file.name}. Content not parsed automatically in this demo."
@@ -161,15 +206,15 @@ if st.button("Generate Recommendation"):
         # Call the Gemini API using the genai model
         try:
             with st.spinner("Generating recommendations... Please wait. This may take a moment."):
-                # The model.generate_content method handles the API call directly
                 response = model.generate_content("".join(prompt_parts))
-
-                # Access the text from the response
                 recommendation_text = response.text
+
+                # Format the text for display with colors and icons
+                formatted_recommendation = format_recommendation_text(recommendation_text)
 
                 st.markdown('<div class="recommendation-box">', unsafe_allow_html=True)
                 st.markdown('<h3 class="sub-header">Generated Recommendation:</h3>', unsafe_allow_html=True)
-                st.write(recommendation_text)
+                st.markdown(formatted_recommendation, unsafe_allow_html=True) # Use st.markdown for HTML content
                 st.markdown('</div>', unsafe_allow_html=True)
 
         except Exception as e:
